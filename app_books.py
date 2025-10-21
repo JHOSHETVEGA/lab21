@@ -1,8 +1,7 @@
 import streamlit as st
 import pandas as pd
 from pymongo import MongoClient
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+
 
 
 st.set_page_config(
