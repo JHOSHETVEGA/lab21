@@ -1,2 +1,4 @@
 pymongo
 streamlit
+scikit-learn
+pandas
