@@ -113,8 +113,16 @@ def get_content_recommendations(db, selected_title, n_recommendations=5):
     if df.empty or selected_title not in df['title'].values:
         return []
 
-    # Combinar texto de descripción + género + autor
-    df["text"] = df["description"] + " " + df["genre"] + " " + df["author"]
+    # Detección automática de campos disponibles
+    genre_col = "genre" if "genre" in df.columns else "genres"
+
+    # Rellenar valores nulos
+    df["description"] = df["description"].fillna("")
+    df[genre_col] = df[genre_col].fillna("")
+    df["author"] = df["author"].fillna("")
+
+    # Unir la información textual
+    df["text"] = df["description"].astype(str) + " " + df[genre_col].astype(str) + " " + df["author"].astype(str)
 
     # Vectorización TF-IDF
     vectorizer = TfidfVectorizer(stop_words="spanish")
