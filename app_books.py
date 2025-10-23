@@ -143,14 +143,21 @@ def get_content_recommendations(db, selected_title, n_recommendations=5):
 def display_book_cards(books):
     cols = st.columns(3)
     for i, book in enumerate(books):
+        # Evita KeyError usando .get()
+        title = book.get("title", "Título desconocido")
+        author = book.get("author", "Autor desconocido")
+        genre = book.get("genre") or book.get("genres", "Género no especificado")
+        rating = book.get("rating", "N/A")
+        description = book.get("description", "Sin descripción disponible")
+
         with cols[i % 3]:
             st.markdown(f"""
             <div style="border:1px solid #ddd; padding:10px; border-radius:5px; margin-bottom:10px">
-                <h3>{book['title']}</h3>
-                <p><strong>Autor:</strong> {book['author']}</p>
-                <p><strong>Género:</strong> {book['genre']}</p>
-                <p><strong>Calificación:</strong> {book['rating']}/10</p>
-                <p>{book['description']}</p>
+                <h3>{title}</h3>
+                <p><strong>Autor:</strong> {author}</p>
+                <p><strong>Género:</strong> {genre}</p>
+                <p><strong>Calificación:</strong> {rating}/10</p>
+                <p>{description}</p>
             </div>
             """, unsafe_allow_html=True)
 
