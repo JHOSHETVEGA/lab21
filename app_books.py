@@ -1,26 +1,18 @@
-# ======================================================
-# 📚 SISTEMA DE RECOMENDACIÓN DE LIBROS
-# Autor: Joshua Vega
-# Versión: 1.1 (corregida)
-# ======================================================
-
 import streamlit as st
 import pandas as pd
+import numpy as np
 from pymongo import MongoClient
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-# ------------------------------------------------------
-# CONFIGURACIÓN INICIAL DE LA APP
-# ------------------------------------------------------
+# Configuración de la página
 st.set_page_config(
-    page_title="📚 Sistema de Recomendación de Libros",
+    page_title="Sistema de Recomendación de Libros",
+    page_icon="📚",
     layout="wide"
 )
 
-# ------------------------------------------------------
-# CONEXIÓN A MONGODB
-# ------------------------------------------------------
+# Conexión a MongoDB
 @st.cache_resource
 def get_database_connection():
     try:
@@ -28,183 +20,161 @@ def get_database_connection():
         db = client["book_recommendation_db"]
         return db, True
     except Exception as e:
-        st.error(f"❌ Error de conexión con MongoDB: {e}")
+        st.error(f"Error al conectar con MongoDB: {e}")
         return None, False
 
-
-# ------------------------------------------------------
-# CARGA DE DATOS DE EJEMPLO (SOLO SI ESTÁ VACÍA)
-# ------------------------------------------------------
+# Inicialización de la base de datos
 def initialize_database(db):
     if db.books.count_documents({}) == 0:
         books_data = [
             {
-                "title": "Cien Años de Soledad",
+                "title": "Cien años de soledad",
                 "author": "Gabriel García Márquez",
-                "genres": ["Realismo Mágico", "Literatura Latinoamericana"],
-                "description": "La historia multigeneracional de la familia Buendía en el mítico pueblo de Macondo.",
+                "genre": "Realismo mágico",
+                "description": "La historia épica de la familia Buendía en el mítico pueblo de Macondo.",
                 "rating": 9.5
             },
             {
                 "title": "1984",
                 "author": "George Orwell",
-                "genres": ["Distopía", "Ciencia Ficción"],
-                "description": "Una sociedad totalitaria controlada por el Gran Hermano donde la libertad individual no existe.",
-                "rating": 9.3
-            },
-            {
-                "title": "El Principito",
-                "author": "Antoine de Saint-Exupéry",
-                "genres": ["Infantil", "Filosofía"],
-                "description": "Un piloto conoce a un pequeño príncipe de otro planeta que le enseña el valor de la amistad y la inocencia.",
-                "rating": 8.9
+                "genre": "Distopía, Política, Ciencia Ficción",
+                "description": "Una sociedad totalitaria donde el Gran Hermano vigila cada movimiento.",
+                "rating": 9.2
             },
             {
                 "title": "Orgullo y Prejuicio",
                 "author": "Jane Austen",
-                "genres": ["Romance", "Clásico"],
-                "description": "La historia de Elizabeth Bennet y el señor Darcy, marcada por las diferencias sociales y los prejuicios.",
-                "rating": 8.7
+                "genre": "Romance, Clásico",
+                "description": "La historia de amor y orgullo entre Elizabeth Bennet y el Sr. Darcy.",
+                "rating": 8.9
             },
             {
-                "title": "Harry Potter y la Piedra Filosofal",
-                "author": "J.K. Rowling",
-                "genres": ["Fantasía", "Aventura"],
-                "description": "Un joven descubre que es un mago y comienza su educación en Hogwarts, una escuela de magia y hechicería.",
+                "title": "El nombre del viento",
+                "author": "Patrick Rothfuss",
+                "genre": "Fantasía, Aventura",
+                "description": "La vida de Kvothe, un joven prodigio con talento para la magia y la música.",
                 "rating": 9.0
+            },
+            {
+                "title": "Los pilares de la Tierra",
+                "author": "Ken Follett",
+                "genre": "Histórico, Drama",
+                "description": "La construcción de una catedral en la Inglaterra medieval llena de intrigas.",
+                "rating": 8.8
             },
             {
                 "title": "El Hobbit",
                 "author": "J.R.R. Tolkien",
-                "genres": ["Fantasía", "Aventura"],
-                "description": "Bilbo Bolsón emprende un viaje lleno de peligros junto a un grupo de enanos para recuperar un tesoro custodiado por un dragón.",
-                "rating": 8.8
+                "genre": "Fantasía, Aventura",
+                "description": "Bilbo Bolsón emprende un viaje inesperado para recuperar un tesoro custodiado por un dragón.",
+                "rating": 9.1
             },
             {
-                "title": "Los Juegos del Hambre",
-                "author": "Suzanne Collins",
-                "genres": ["Ciencia Ficción", "Acción"],
-                "description": "Katniss Everdeen debe luchar por su vida en una competencia televisada en un futuro distópico.",
+                "title": "Crónica de una muerte anunciada",
+                "author": "Gabriel García Márquez",
+                "genre": "Misterio, Realismo mágico",
+                "description": "Una historia donde todos saben que va a ocurrir un asesinato, menos la víctima.",
                 "rating": 8.6
             },
             {
-                "title": "Crimen y Castigo",
-                "author": "Fiódor Dostoyevski",
-                "genres": ["Drama", "Psicológico"],
-                "description": "Un joven estudiante comete un asesinato y lucha con la culpa moral y la redención.",
-                "rating": 9.1
+                "title": "El alquimista",
+                "author": "Paulo Coelho",
+                "genre": "Ficción, Filosofía",
+                "description": "Un joven pastor andaluz sigue su sueño en busca de un tesoro y de sí mismo.",
+                "rating": 8.4
+            },
+            {
+                "title": "Harry Potter y la piedra filosofal",
+                "author": "J.K. Rowling",
+                "genre": "Fantasía, Juvenil, Aventura",
+                "description": "Un niño descubre que es mago y asiste a una escuela mágica llamada Hogwarts.",
+                "rating": 9.3
+            },
+            {
+                "title": "Don Quijote de la Mancha",
+                "author": "Miguel de Cervantes",
+                "genre": "Clásico, Aventura, Humor",
+                "description": "Un hidalgo pierde la cordura y sale a recorrer España como caballero andante.",
+                "rating": 9.0
             }
         ]
+
         db.books.insert_many(books_data)
         return True
     return False
 
+# Obtener todos los libros
+def get_all_books(db):
+    return list(db.books.find({}, {"_id": 0}))
 
-# ------------------------------------------------------
-# FUNCIÓN PRINCIPAL DE RECOMENDACIÓN
-# ------------------------------------------------------
-def get_content_recommendations(db, selected_title, n=5):
-    books = list(db.books.find({}, {"_id": 0}))
-    df = pd.DataFrame(books)
-
-    if selected_title not in df["title"].values:
+# Generar recomendaciones por contenido
+def get_content_recommendations(db, selected_title, n_recommendations=5):
+    df = pd.DataFrame(get_all_books(db))
+    if df.empty or selected_title not in df['title'].values:
         return []
 
-    # --- Limpieza de datos ---
-    df["description"] = df["description"].fillna("")
-    df["genres"] = df["genres"].apply(lambda g: g if isinstance(g, list) else [])
-    df["text"] = df["description"] + " " + df["genres"].apply(lambda g: " ".join(g))
-    df["text"] = df["text"].astype(str)
+    # Combinar texto de descripción + género + autor
+    df["text"] = df["description"] + " " + df["genre"] + " " + df["author"]
 
-    # --- Vectorización TF-IDF ---
+    # Vectorización TF-IDF
     vectorizer = TfidfVectorizer(stop_words="spanish")
     tfidf_matrix = vectorizer.fit_transform(df["text"])
 
-    # --- Similaridad coseno ---
-    similarity = cosine_similarity(tfidf_matrix)
+    # Similitud del coseno
+    cosine_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
 
     # Índice del libro seleccionado
     idx = df.index[df["title"] == selected_title][0]
+    sim_scores = list(enumerate(cosine_sim[idx]))
+    sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)[1:n_recommendations+1]
 
-    # Ordenar por similitud descendente
-    sim_scores = list(enumerate(similarity[idx]))
-    sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)[1:n+1]
+    recommendations = df.iloc[[i[0] for i in sim_scores]].to_dict(orient="records")
+    return recommendations
 
-    recommended_books = df.iloc[[i[0] for i in sim_scores]]
-    return recommended_books.to_dict(orient="records")
-
-
-# ------------------------------------------------------
-# VISUALIZACIÓN DE LIBROS EN TARJETAS
-# ------------------------------------------------------
+# Mostrar tarjetas de libros
 def display_book_cards(books):
-    st.markdown("""
-    <style>
-    .book-card {
-        background-color: #f8f9fa;
-        border: 1px solid #ddd;
-        border-radius: 12px;
-        padding: 15px;
-        margin-bottom: 15px;
-        transition: transform 0.2s;
-    }
-    .book-card:hover {
-        transform: scale(1.02);
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
     cols = st.columns(3)
     for i, book in enumerate(books):
         with cols[i % 3]:
             st.markdown(f"""
-            <div class="book-card">
+            <div style="border:1px solid #ddd; padding:10px; border-radius:5px; margin-bottom:10px">
                 <h3>{book['title']}</h3>
                 <p><strong>Autor:</strong> {book['author']}</p>
-                <p><strong>Géneros:</strong> {', '.join(book['genres'])}</p>
-                <p><strong>Calificación:</strong> ⭐ {book['rating']}/10</p>
+                <p><strong>Género:</strong> {book['genre']}</p>
+                <p><strong>Calificación:</strong> {book['rating']}/10</p>
                 <p>{book['description']}</p>
             </div>
             """, unsafe_allow_html=True)
 
-
-# ------------------------------------------------------
-# APP PRINCIPAL
-# ------------------------------------------------------
+# Interfaz principal
 def main():
     st.title("📚 Sistema de Recomendación de Libros")
+    db, flag = get_database_connection()
+    if not flag:
+        st.error("Error al conectar con la base de datos.")
+        return
 
-    db, connected = get_database_connection()
-    if not connected:
-        st.stop()
+    if initialize_database(db):
+        st.success("Base de datos inicializada con datos de ejemplo.")
 
-    # Evita inicialización repetida
-    if "initialized" not in st.session_state:
-        if initialize_database(db):
-            st.success("✅ Base de datos inicializada con datos de ejemplo.")
-        st.session_state["initialized"] = True
+    books = get_all_books(db)
+    titles = [b["title"] for b in books]
 
-    all_books = list(db.books.find({}, {"_id": 0, "title": 1}))
+    selected_book = st.selectbox("Selecciona un libro para obtener recomendaciones:", titles)
 
-    st.subheader("Selecciona un libro para obtener recomendaciones")
-    selected_book = st.selectbox("📖 Elige un libro:", [b["title"] for b in all_books])
-
-    if st.button("🔍 Mostrar Recomendaciones"):
+    if selected_book:
+        st.subheader(f"📖 Libro seleccionado: {selected_book}")
         recs = get_content_recommendations(db, selected_book)
+
         if recs:
-            st.markdown(f"### 📗 Libros similares a **{selected_book}**:")
+            st.subheader("🔍 Recomendaciones similares:")
             display_book_cards(recs)
         else:
-            st.warning("No se encontraron recomendaciones similares.")
+            st.warning("No se encontraron recomendaciones para este libro.")
 
     st.divider()
-    st.subheader("📘 Catálogo Completo de Libros")
-    books = list(db.books.find({}, {"_id": 0}))
+    st.subheader("📘 Catálogo completo")
     display_book_cards(books)
 
-
-# ------------------------------------------------------
-# EJECUCIÓN PRINCIPAL
-# ------------------------------------------------------
 if __name__ == "__main__":
     main()
