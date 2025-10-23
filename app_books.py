@@ -120,7 +120,6 @@ def get_content_recommendations(db, selected_title, n_recommendations=5):
 
     df["text"] = df["description"].astype(str) + " " + df[genre_col].astype(str) + " " + df["author"].astype(str)
 
-    # ✅ Lista de stopwords en español
     spanish_stopwords = [
         "de", "la", "que", "el", "en", "y", "a", "los", "del", "se",
         "las", "por", "un", "para", "con", "no", "una", "su", "al",
