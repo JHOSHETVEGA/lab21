@@ -113,25 +113,25 @@ def get_content_recommendations(db, selected_title, n_recommendations=5):
     if df.empty or selected_title not in df['title'].values:
         return []
 
-    # Detección automática de campos disponibles
     genre_col = "genre" if "genre" in df.columns else "genres"
-
-    # Rellenar valores nulos
     df["description"] = df["description"].fillna("")
     df[genre_col] = df[genre_col].fillna("")
     df["author"] = df["author"].fillna("")
 
-    # Unir la información textual
     df["text"] = df["description"].astype(str) + " " + df[genre_col].astype(str) + " " + df["author"].astype(str)
 
-    # Vectorización TF-IDF
-    vectorizer = TfidfVectorizer(stop_words="spanish")
+    # ✅ Lista de stopwords en español
+    spanish_stopwords = [
+        "de", "la", "que", "el", "en", "y", "a", "los", "del", "se",
+        "las", "por", "un", "para", "con", "no", "una", "su", "al",
+        "lo", "como", "más", "pero", "sus", "le", "ya", "o", "este",
+        "sí", "porque", "esta", "entre", "cuando", "muy", "sin", "sobre"
+    ]
+
+    vectorizer = TfidfVectorizer(stop_words=spanish_stopwords)
     tfidf_matrix = vectorizer.fit_transform(df["text"])
 
-    # Similitud del coseno
     cosine_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
-
-    # Índice del libro seleccionado
     idx = df.index[df["title"] == selected_title][0]
     sim_scores = list(enumerate(cosine_sim[idx]))
     sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)[1:n_recommendations+1]
