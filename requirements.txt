@@ -2,3 +2,8 @@ pymongo
 streamlit
 scikit-learn
 pandas
+streamlit
+requests
+beautifulsoup4
+matplotlib
+seaborn
