@@ -7,22 +7,20 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from collections import Counter
 
-# ========================================
+
 # CONFIGURACIÓN INICIAL
-# ========================================
 st.set_page_config(page_title="Web Scraper Pro", page_icon="🌐", layout="wide")
 st.title("🌍 Web Scraper Pro con Streamlit")
 st.markdown("### Extrae datos, genera reportes visuales y analiza patrones 🔎")
 
-# ========================================
+
 # FUNCIÓN DE SCRAPING
-# ========================================
 def scrape_quotes(url):
     try:
         res = requests.get(url)
         res.raise_for_status()
     except Exception as e:
-        st.error(f"❌ Error al acceder a la URL: {e}")
+        st.error(f" Error al acceder a la URL: {e}")
         return pd.DataFrame()
 
     soup = BeautifulSoup(res.text, 'html.parser')
@@ -42,35 +40,30 @@ def scrape_quotes(url):
 
     return pd.DataFrame(data)
 
-# ========================================
 # INTERFAZ DE USUARIO
-# ========================================
-url = st.text_input("🔗 Ingresa la URL para analizar:", "http://quotes.toscrape.com/page/1/")
 
-if st.button("🚀 Extraer Datos"):
+url = st.text_input("Ingresa la URL para analizar:", "http://quotes.toscrape.com/page/1/")
+
+if st.button(" Extraer Datos"):
     df = scrape_quotes(url)
 
     if df.empty:
-        st.warning("⚠️ No se encontraron datos o hubo un error en la extracción.")
+        st.warning("No se encontraron datos o hubo un error en la extracción.")
     else:
-        st.success(f"✅ Se extrajeron {len(df)} citas correctamente.")
+        st.success(f" Se extrajeron {len(df)} citas correctamente.")
         st.dataframe(df, use_container_width=True)
 
-        # ========================================
         # MÉTRICAS RESUMEN
-        # ========================================
         col1, col2, col3 = st.columns(3)
-        col1.metric("🧑‍💻 Autores únicos", df['Autor'].nunique())
-        col2.metric("🏷️ Tags únicos", len(set(tag for tags in df['Tags'] for tag in tags)))
-        col3.metric("📈 Promedio de Tags por Cita", round(df['Num Tags'].mean(), 2))
+        col1.metric(" Autores únicos", df['Autor'].nunique())
+        col2.metric(" Tags únicos", len(set(tag for tags in df['Tags'] for tag in tags)))
+        col3.metric(" Promedio de Tags por Cita", round(df['Num Tags'].mean(), 2))
 
-        # ========================================
         # GRÁFICOS
-        # ========================================
-        st.markdown("## 📊 Análisis Visual de los Datos")
+        st.markdown("##  Análisis Visual de los Datos")
 
-        # --- 1️⃣ Autores más citados ---
-        st.subheader("📚 Autores más citados")
+        # --- Autores más citados ---
+        st.subheader(" Autores más citados")
         autores = df['Autor'].value_counts().head(10)
         fig1, ax1 = plt.subplots()
         autores.plot(kind='bar', ax=ax1, color='#4c72b0')
@@ -79,8 +72,8 @@ if st.button("🚀 Extraer Datos"):
         ax1.set_title("Top 10 Autores más citados")
         st.pyplot(fig1)
 
-        # --- 2️⃣ Tags más populares ---
-        st.subheader("🏷️ Tags más populares")
+        # ---  Tags más populares ---
+        st.subheader(" Tags más populares")
         tags_flat = [tag for tags in df['Tags'] for tag in tags]
         tags_counts = Counter(tags_flat)
         top_tags = dict(sorted(tags_counts.items(), key=lambda x: x[1], reverse=True)[:10])
@@ -92,7 +85,7 @@ if st.button("🚀 Extraer Datos"):
         ax2.set_title("Top 10 Tags más usados")
         st.pyplot(fig2)
 
-        # --- 3️⃣ Distribución del número de tags por cita ---
+        # ---  Distribución del número de tags por cita ---
         st.subheader("📈 Distribución de la cantidad de tags por cita")
         fig3, ax3 = plt.subplots()
         sns.histplot(df['Num Tags'], bins=range(0, max(df['Num Tags']) + 2), ax=ax3, color='#c44e52')
@@ -100,7 +93,7 @@ if st.button("🚀 Extraer Datos"):
         ax3.set_ylabel("Cantidad de Citas")
         st.pyplot(fig3)
 
-        # --- 4️⃣ Relación entre autores y cantidad promedio de tags ---
+        # ---  Relación entre autores y cantidad promedio de tags ---
         st.subheader("🔍 Promedio de etiquetas por autor")
         avg_tags = df.groupby('Autor')['Num Tags'].mean().sort_values(ascending=False).head(10)
         fig4, ax4 = plt.subplots()
@@ -109,18 +102,18 @@ if st.button("🚀 Extraer Datos"):
         ax4.set_ylabel("Autor")
         st.pyplot(fig4)
 
-        # --- 5️⃣ Gráfico circular de proporción de citas por autor ---
-        st.subheader("🥧 Proporción de citas por autor (Top 5)")
+        # ---  Gráfico circular de proporción de citas por autor ---
+        st.subheader(" Proporción de citas por autor (Top 5)")
         top_autores = df['Autor'].value_counts().head(5)
         fig5, ax5 = plt.subplots()
         ax5.pie(top_autores.values, labels=top_autores.index, autopct='%1.1f%%', startangle=140)
         ax5.set_title("Distribución de Citas por Autor")
         st.pyplot(fig5)
 
-        # ========================================
+        
         # DESCARGA DEL DATASET
-        # ========================================
-        st.markdown("## 💾 Exportar datos")
+   
+        st.markdown("##  Exportar datos")
         st.download_button(
             label="Descargar dataset en CSV",
             data=df.to_csv(index=False).encode('utf-8'),
@@ -128,4 +121,3 @@ if st.button("🚀 Extraer Datos"):
             mime='text/csv'
         )
 
-        st.info("✨ Consejo: cambia la URL a otra página (por ejemplo, `/page/2/`) para analizar más citas.")
