@@ -10,8 +10,8 @@ from collections import Counter
 
 # CONFIGURACIÓN INICIAL
 st.set_page_config(page_title="Web Scraper Pro", page_icon="🌐", layout="wide")
-st.title("🌍 Web Scraper Pro con Streamlit")
-st.markdown("### Extrae datos, genera reportes visuales y analiza patrones 🔎")
+st.title(" Web Scraper Pro con Streamlit")
+st.markdown("### Extrae datos, genera reportes visuales y analiza patrones ")
 
 
 # FUNCIÓN DE SCRAPING
